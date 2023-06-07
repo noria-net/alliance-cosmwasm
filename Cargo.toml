@@ -1,0 +1,18 @@
+[package]
+name = "alliance-cosmwasm"
+version = "0.1.0"
+authors = ["Eric Woolsey <ewoolsey@ualberta.ca>"]
+edition = "2021"
+description = "Bindings for CosmWasm contracts to call into the Alliance module"
+license = "Apache-2.0"
+readme = "README.md"
+
+[features]
+backtraces = ["cosmwasm-std/backtraces"]
+
+[dependencies]
+cosmwasm-std = "1"
+cosmwasm-schema = "1"
+schemars = "0.8"
+serde = { version = "1", default-features = false, features = ["derive"] }
+chrono = { version = "0.4", default-features = false, features = ["serde"] }

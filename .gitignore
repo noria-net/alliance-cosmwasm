@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Text file backups
+**/*.rs.bk
+
+# Build results
+target/
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# Lock files
+.lock
+Cargo.lock
+
+# Auto-gen
+.cargo-ok
+
+# wasm-deploy
+.wasm-deploy
+deployment/
+
+# Build artifacts
+artifacts/
+
+# Schemas
+**/schema/
