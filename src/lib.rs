@@ -36,7 +36,6 @@ pub enum AllianceQuery {
     #[returns(AllianceResponse)]
     Alliance { denom: String },
 
-    // TODO: inconsistent naming?
     #[returns(AlliancesResponse)]
     Alliances { pagination: Option<Pagination> },
 
@@ -50,7 +49,6 @@ pub enum AllianceQuery {
         pagination: Option<Pagination>,
     },
 
-    // TODO: Does this return type have the right name?
     #[returns(DelegationResponse)]
     Delegation {
         delegator_addr: Addr,
@@ -134,6 +132,7 @@ pub struct AllianceAsset {
     pub denom: String,
     pub reward_weight: Decimal256,
     pub consensus_weight: Decimal256,
+    pub consensus_cap: Decimal256,
     pub take_rate: Decimal256,
     pub total_tokens: Decimal256,
     pub total_validator_shares: Decimal256,
