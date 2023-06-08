@@ -33,44 +33,45 @@ pub enum AllianceMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum AllianceQuery {
-    #[returns(AllianceAllianceResponse)]
+    #[returns(AllianceResponse)]
     Alliance { denom: String },
 
     // TODO: inconsistent naming?
-    #[returns(AllianceAlliancesResponse)]
+    #[returns(AlliancesResponse)]
     Alliances { pagination: Option<Pagination> },
 
-    #[returns(AllianceAlliancesDelegationsResponse)]
+    #[returns(AlliancesDelegationsResponse)]
     AlliancesDelegations { pagination: Option<Pagination> },
 
-    #[returns(AllianceAlliancesDelegationsResponse)]
+    #[returns(AlliancesDelegationsResponse)]
     AlliancesDelegationByValidator {
         delegator_addr: Addr,
         validator_addr: Addr,
         pagination: Option<Pagination>,
     },
 
-    #[returns(SingleDelegationResponse)]
+    // TODO: Does this return type have the right name?
+    #[returns(DelegationResponse)]
     Delegation {
         delegator_addr: Addr,
         validator_addr: Addr,
         denom: String,
     },
 
-    #[returns(RewardsResponse)]
+    #[returns(DelegationRewardsResponse)]
     DelegationRewards {
         delegator_addr: Addr,
         validator_addr: Addr,
         denom: String,
     },
 
-    #[returns(AllianceParamsResponse)]
+    #[returns(ParamsResponse)]
     Params {},
 
     #[returns(ValidatorResponse)]
     Validator { validator_addr: Addr },
 
-    #[returns(AllValidatorsResponse)]
+    #[returns(ValidatorsResponse)]
     Validators { pagination: Option<Pagination> },
 }
 
@@ -112,13 +113,13 @@ pub struct ValidatorResponse {
 }
 
 #[cw_serde]
-pub struct AllValidatorsResponse {
+pub struct ValidatorsResponse {
     pub validators: Vec<ValidatorResponse>,
     pub pagination: Option<PaginationResponse>,
 }
 
 #[cw_serde]
-pub struct AllianceParamsResponse {
+pub struct ParamsResponse {
     pub params: AllianceParams,
 }
 
@@ -167,34 +168,34 @@ where
 }
 
 #[cw_serde]
-pub struct AllianceAllianceResponse {
+pub struct AllianceResponse {
     pub alliance: AllianceAsset,
 }
 
 #[cw_serde]
-pub struct AllianceAlliancesResponse {
+pub struct AlliancesResponse {
     pub alliances: Vec<AllianceAsset>,
     pub pagination: Option<PaginationResponse>,
 }
 
 #[cw_serde]
-pub struct AllianceAlliancesDelegationsResponse {
-    pub delegations: Option<Vec<DelegationResponse>>,
+pub struct AlliancesDelegationsResponse {
+    pub delegations: Option<Vec<SingleDelegationResponse>>,
     pub pagination: Option<PaginationResponse>,
 }
 
 #[cw_serde]
-pub struct RewardsResponse {
+pub struct DelegationRewardsResponse {
     pub rewards: Vec<Coin>,
 }
 
 #[cw_serde]
-pub struct SingleDelegationResponse {
-    pub delegation: DelegationResponse,
+pub struct DelegationResponse {
+    pub delegation: SingleDelegationResponse,
 }
 
 #[cw_serde]
-pub struct DelegationResponse {
+pub struct SingleDelegationResponse {
     pub delegation: Delegation,
     pub balance: Coin,
 }
@@ -257,42 +258,42 @@ pub trait AllianceQuerier {
     fn query_alliance_alliance(
         &self,
         denom: String,
-    ) -> StdResult<AllianceAllianceResponse>;
+    ) -> StdResult<AllianceResponse>;
 
     fn query_alliance_alliances(
         &self,
         pagination: Option<Pagination>,
-    ) -> StdResult<AllianceAlliancesResponse>;
+    ) -> StdResult<AlliancesResponse>;
 
     fn query_alliance_alliances_delegations(
         &self,
         pagination: Option<Pagination>,
-    ) -> StdResult<AllianceAlliancesDelegationsResponse>;
+    ) -> StdResult<AlliancesDelegationsResponse>;
 
     fn query_alliance_alliances_delegation_by_validator(
         &self,
         delegator_addr: Addr,
         validator_addr: Addr,
         pagination: Option<Pagination>,
-    ) -> StdResult<AllianceAlliancesDelegationsResponse>;
+    ) -> StdResult<AlliancesDelegationsResponse>;
 
     fn query_alliance_delegation(
         &self,
         delegator_addr: Addr,
         validator_addr: Addr,
         denom: String,
-    ) -> StdResult<SingleDelegationResponse>;
+    ) -> StdResult<DelegationResponse>;
 
     fn query_alliance_delegation_rewards(
         &self,
         delegator_addr: Addr,
         validator_addr: Addr,
         denom: String,
-    ) -> StdResult<RewardsResponse>;
+    ) -> StdResult<DelegationRewardsResponse>;
 
     fn query_alliance_params(
         &self,
-    ) -> StdResult<AllianceParamsResponse>;
+    ) -> StdResult<ParamsResponse>;
 
     fn query_alliance_validator(
         &self,
@@ -302,7 +303,7 @@ pub trait AllianceQuerier {
     fn query_alliance_validators(
         &self,
         pagination: Option<Pagination>,
-    ) -> StdResult<AllValidatorsResponse>;
+    ) -> StdResult<ValidatorsResponse>;
 }
 
 impl<'a, T> AllianceQuerier for QuerierWrapper<'a, T>
@@ -312,7 +313,7 @@ where
     fn query_alliance_alliance(
         &self,
         denom: String,
-    ) -> StdResult<AllianceAllianceResponse> {
+    ) -> StdResult<AllianceResponse> {
         let custom_query: T = AllianceQuery::Alliance { denom }.into();
         self.query(&custom_query.into())
     }
@@ -320,7 +321,7 @@ where
     fn query_alliance_alliances(
         &self,
         pagination: Option<Pagination>,
-    ) -> StdResult<AllianceAlliancesResponse> {
+    ) -> StdResult<AlliancesResponse> {
         let custom_query: T = AllianceQuery::Alliances { pagination }.into();
         self.query(&custom_query.into())
     }
@@ -328,7 +329,7 @@ where
     fn query_alliance_alliances_delegations(
         &self,
         pagination: Option<Pagination>,
-    ) -> StdResult<AllianceAlliancesDelegationsResponse> {
+    ) -> StdResult<AlliancesDelegationsResponse> {
         let custom_query: T = AllianceQuery::AlliancesDelegations { pagination }.into();
         self.query(&custom_query.into())
     }
@@ -338,7 +339,7 @@ where
         delegator_addr: Addr,
         validator_addr: Addr,
         pagination: Option<Pagination>,
-    ) -> StdResult<AllianceAlliancesDelegationsResponse> {
+    ) -> StdResult<AlliancesDelegationsResponse> {
         let custom_query: T = AllianceQuery::AlliancesDelegationByValidator { delegator_addr, validator_addr, pagination }.into();
         self.query(&custom_query.into())
     }
@@ -348,7 +349,7 @@ where
         delegator_addr: Addr,
         validator_addr: Addr,
         denom: String,
-    ) -> StdResult<SingleDelegationResponse> {
+    ) -> StdResult<DelegationResponse> {
         let custom_query: T = AllianceQuery::Delegation { delegator_addr, validator_addr, denom }.into();
         self.query(&custom_query.into())
     }
@@ -358,14 +359,14 @@ where
         delegator_addr: Addr,
         validator_addr: Addr,
         denom: String,
-    ) -> StdResult<RewardsResponse> {
+    ) -> StdResult<DelegationRewardsResponse> {
         let custom_query: T = AllianceQuery::DelegationRewards { delegator_addr, validator_addr, denom }.into();
         self.query(&custom_query.into())
     }
 
     fn query_alliance_params(
         &self,
-    ) -> StdResult<AllianceParamsResponse> {
+    ) -> StdResult<ParamsResponse> {
         let custom_query: T = AllianceQuery::Params { }.into();
         self.query(&custom_query.into())
     }
@@ -381,7 +382,7 @@ where
     fn query_alliance_validators(
         &self,
         pagination: Option<Pagination>
-    ) -> StdResult<AllValidatorsResponse> {
+    ) -> StdResult<ValidatorsResponse> {
         let custom_query: T = AllianceQuery::Validators { pagination }.into();
         self.query(&custom_query.into())
     }
