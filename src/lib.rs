@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc, TimeZone};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, CustomQuery, QuerierWrapper, Decimal256, Coin, Binary, Timestamp};
+use cosmwasm_std::{Addr, CustomQuery, QuerierWrapper, Decimal256, Coin, Binary, Timestamp, StdResult};
 use serde::{Serializer, Deserializer, Serialize, Deserialize};
 
 /// A number of Custom messages that can call into the Alliance bindings
@@ -36,6 +36,7 @@ pub enum AllianceQuery {
     #[returns(AllianceAllianceResponse)]
     Alliance { denom: String },
 
+    // TODO: inconsistent naming?
     #[returns(AllianceAlliancesResponse)]
     Alliances { pagination: Option<Pagination> },
 
@@ -144,9 +145,7 @@ pub struct AllianceAsset {
     pub is_initialized: Option<bool>,
 }
 
-// const FORMAT: &str = "%Y-%m-%d %H:%M:%S";
-
-pub fn serialize_time_stamp<S>(
+fn serialize_time_stamp<S>(
     time_stamp: &Timestamp,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
@@ -155,19 +154,15 @@ where
 {
     let date: DateTime<Utc> = Utc.timestamp_nanos(time_stamp.nanos() as i64);
     date.serialize(serializer)
-    // let s = format!("{}", date.format(FORMAT));
-    // serializer.serialize_str(&s)
 }
 
-pub fn deserialize_time_stamp<'de, D>(
+fn deserialize_time_stamp<'de, D>(
     deserializer: D,
 ) -> Result<Timestamp, D::Error>
 where
     D: Deserializer<'de>,
 {
     let date = DateTime::<Utc>::deserialize(deserializer)?;
-    // let s = String::deserialize(deserializer)?;
-    // let date = Utc.datetime_from_str(&s, FORMAT).map_err(serde::de::Error::custom)?;
     Ok(Timestamp::from_nanos(date.timestamp_nanos() as u64))
 }
 
@@ -221,125 +216,179 @@ pub struct Reward {
 }
 
 pub trait CreateAllianceMsg: From<AllianceMsg> {
-    // fn token_factory_create_denom(
-    //     subdenom: String,
-    //     metadata: Option<DenomMetadata>,
-    // ) -> StdResult<Self> {
-    //     Ok(AllianceMsg::CreateDenom { subdenom, metadata }.into())
-    // }
-    // fn token_factory_change_admin(denom: String, new_admin_address: Addr) -> StdResult<Self> {
-    //     Ok(AllianceMsg::ChangeAdmin {
-    //         denom,
-    //         new_admin_address,
-    //     }
-    //     .into())
-    // }
-    // fn token_factory_mint_tokens(
-    //     denom: String,
-    //     amount: Uint256,
-    //     mint_to_address: Addr,
-    // ) -> StdResult<Self> {
-    //     Ok(AllianceMsg::MintTokens {
-    //         denom,
-    //         amount,
-    //         mint_to_address,
-    //     }
-    //     .into())
-    // }
-    // fn token_factory_burn_tokens(
-    //     denom: String,
-    //     amount: Uint256,
-    //     burn_from_address: Addr,
-    // ) -> StdResult<Self> {
-    //     Ok(AllianceMsg::BurnTokens {
-    //         denom,
-    //         amount,
-    //         burn_from_address,
-    //     }
-    //     .into())
-    // }
-    // fn token_factory_set_metadata(metadata: DenomMetadata) -> StdResult<Self> {
-    //     Ok(AllianceMsg::SetMetadata { metadata }.into())
-    // }
-    // fn token_factory_force_transfer(
-    //     denom: String,
-    //     from_address: Addr,
-    //     to_address: Addr,
-    //     amount: Uint256,
-    // ) -> StdResult<Self> {
-    //     Ok(AllianceMsg::ForceTransfer {
-    //         denom,
-    //         from_address,
-    //         to_address,
-    //         amount,
-    //     }
-    //     .into())
-    // }
+    fn alliance_delegate(
+        delegator_address: Addr,
+        validator_address: Addr,
+        amount: Coin,
+    ) -> Self {
+        AllianceMsg::Delegate { delegator_address, validator_address, amount }.into()
+    }
+
+    fn alliance_undelegate(
+        delegator_address: Addr,
+        validator_address: Addr,
+        amount: Coin,
+    ) -> Self {
+        AllianceMsg::Undelegate { delegator_address, validator_address, amount }.into()
+    }
+
+    fn alliance_redelegate(
+        delegator_address: Addr,
+        validator_src_address: Addr,
+        validator_dst_address: Addr,
+        amount: Coin,
+    ) -> Self {
+        AllianceMsg::Redelegate { delegator_address, validator_src_address, validator_dst_address, amount }.into()
+    }
+
+    fn alliance_claim_deligation_rewards(
+        delegator_address: Addr,
+        validator_address: Addr,
+        denom: String,
+    ) -> Self {
+        AllianceMsg::ClaimDelegationRewards { delegator_address, validator_address, denom }.into()
+    }
+
 }
 
 impl<T> CreateAllianceMsg for T where T: From<AllianceMsg> {}
 
 pub trait AllianceQuerier {
-    // fn query_token_factory_full_denom(
-    //     &self,
-    //     subdenom: String,
-    //     creator_addr: Addr,
-    // ) -> StdResult<FullDenomResponse>;
+    fn query_alliance_alliance(
+        &self,
+        denom: String,
+    ) -> StdResult<AllianceAllianceResponse>;
 
-    // fn query_token_factory_admin(&self, denom: String) -> StdResult<AdminResponse>;
+    fn query_alliance_alliances(
+        &self,
+        pagination: Option<Pagination>,
+    ) -> StdResult<AllianceAlliancesResponse>;
 
-    // fn query_token_factory_metadata(&self, denom: String) -> StdResult<MetadataResponse>;
+    fn query_alliance_alliances_delegations(
+        &self,
+        pagination: Option<Pagination>,
+    ) -> StdResult<AllianceAlliancesDelegationsResponse>;
 
-    // fn query_token_factory_denoms_by_creator(
-    //     &self,
-    //     creator: Addr,
-    // ) -> StdResult<DenomsByCreatorResponse>;
+    fn query_alliance_alliances_delegation_by_validator(
+        &self,
+        delegator_addr: Addr,
+        validator_addr: Addr,
+        pagination: Option<Pagination>,
+    ) -> StdResult<AllianceAlliancesDelegationsResponse>;
 
-    // fn query_token_factory_params(&self) -> StdResult<TokenParamsResponse>;
+    fn query_alliance_delegation(
+        &self,
+        delegator_addr: Addr,
+        validator_addr: Addr,
+        denom: String,
+    ) -> StdResult<SingleDelegationResponse>;
+
+    fn query_alliance_delegation_rewards(
+        &self,
+        delegator_addr: Addr,
+        validator_addr: Addr,
+        denom: String,
+    ) -> StdResult<RewardsResponse>;
+
+    fn query_alliance_params(
+        &self,
+    ) -> StdResult<AllianceParamsResponse>;
+
+    fn query_alliance_validator(
+        &self,
+        validator_addr: Addr,
+    ) -> StdResult<ValidatorResponse>;
+
+    fn query_alliance_validators(
+        &self,
+        pagination: Option<Pagination>,
+    ) -> StdResult<AllValidatorsResponse>;
 }
 
 impl<'a, T> AllianceQuerier for QuerierWrapper<'a, T>
 where
     T: CustomQuery + From<AllianceQuery>,
 {
-    // fn query_token_factory_full_denom(
-    //     &self,
-    //     subdenom: String,
-    //     creator_addr: Addr,
-    // ) -> StdResult<FullDenomResponse> {
-    //     let custom_query: T = AllianceQuery::FullDenom {
-    //         subdenom,
-    //         creator_addr,
-    //     }
-    //     .into();
-    //     self.query(&custom_query.into())
-    // }
+    fn query_alliance_alliance(
+        &self,
+        denom: String,
+    ) -> StdResult<AllianceAllianceResponse> {
+        let custom_query: T = AllianceQuery::Alliance { denom }.into();
+        self.query(&custom_query.into())
+    }
 
-    // fn query_token_factory_admin(&self, denom: String) -> StdResult<AdminResponse> {
-    //     let custom_query: T = AllianceQuery::Admin { denom }.into();
-    //     self.query(&custom_query.into())
-    // }
+    fn query_alliance_alliances(
+        &self,
+        pagination: Option<Pagination>,
+    ) -> StdResult<AllianceAlliancesResponse> {
+        let custom_query: T = AllianceQuery::Alliances { pagination }.into();
+        self.query(&custom_query.into())
+    }
 
-    // fn query_token_factory_metadata(&self, denom: String) -> StdResult<MetadataResponse> {
-    //     let custom_query: T = AllianceQuery::Metadata { denom }.into();
-    //     self.query(&custom_query.into())
-    // }
+    fn query_alliance_alliances_delegations(
+        &self,
+        pagination: Option<Pagination>,
+    ) -> StdResult<AllianceAlliancesDelegationsResponse> {
+        let custom_query: T = AllianceQuery::AlliancesDelegations { pagination }.into();
+        self.query(&custom_query.into())
+    }
 
-    // fn query_token_factory_denoms_by_creator(
-    //     &self,
-    //     creator: Addr,
-    // ) -> StdResult<DenomsByCreatorResponse> {
-    //     let custom_query: T = AllianceQuery::DenomsByCreator { creator }.into();
-    //     self.query(&custom_query.into())
-    // }
+    fn query_alliance_alliances_delegation_by_validator(
+        &self,
+        delegator_addr: Addr,
+        validator_addr: Addr,
+        pagination: Option<Pagination>,
+    ) -> StdResult<AllianceAlliancesDelegationsResponse> {
+        let custom_query: T = AllianceQuery::AlliancesDelegationByValidator { delegator_addr, validator_addr, pagination }.into();
+        self.query(&custom_query.into())
+    }
 
-    // fn query_token_factory_params(&self) -> StdResult<TokenParamsResponse> {
-    //     let custom_query: T = AllianceQuery::Params {}.into();
-    //     self.query(&custom_query.into())
-    // }
+    fn query_alliance_delegation(
+        &self,
+        delegator_addr: Addr,
+        validator_addr: Addr,
+        denom: String,
+    ) -> StdResult<SingleDelegationResponse> {
+        let custom_query: T = AllianceQuery::Delegation { delegator_addr, validator_addr, denom }.into();
+        self.query(&custom_query.into())
+    }
+
+    fn query_alliance_delegation_rewards(
+        &self,
+        delegator_addr: Addr,
+        validator_addr: Addr,
+        denom: String,
+    ) -> StdResult<RewardsResponse> {
+        let custom_query: T = AllianceQuery::DelegationRewards { delegator_addr, validator_addr, denom }.into();
+        self.query(&custom_query.into())
+    }
+
+    fn query_alliance_params(
+        &self,
+    ) -> StdResult<AllianceParamsResponse> {
+        let custom_query: T = AllianceQuery::Params { }.into();
+        self.query(&custom_query.into())
+    }
+
+    fn query_alliance_validator(
+        &self,
+        validator_addr: Addr,
+    ) -> StdResult<ValidatorResponse> {
+        let custom_query: T = AllianceQuery::Validator { validator_addr }.into();
+        self.query(&custom_query.into())
+    }
+
+    fn query_alliance_validators(
+        &self,
+        pagination: Option<Pagination>
+    ) -> StdResult<AllValidatorsResponse> {
+        let custom_query: T = AllianceQuery::Validators { pagination }.into();
+        self.query(&custom_query.into())
+    }
+
 }
 
 // This export is added to all contracts that import this package, signifying that they require
-// "token_factory" support on the chain they run on.
+// "alliance" support on the chain they run on.
 #[no_mangle]
 extern "C" fn requires_alliance() {}
